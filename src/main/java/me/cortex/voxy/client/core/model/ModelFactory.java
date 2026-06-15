@@ -664,9 +664,9 @@ public class ModelFactory {
     }
 
     private static int getBlockLightEmission(BlockState state) {
-        boolean isEmissive = state.emissiveRendering(new BlockGetter() {
+        boolean isEmissive = state.emissiveRendering(new BlockAndTintGetter() {
             @Override
-            public @org.jspecify.annotations.Nullable BlockEntity getBlockEntity(BlockPos pos) {
+            public @Nullable BlockEntity getBlockEntity(BlockPos pos) {
                 return null;
             }
 
@@ -686,8 +686,28 @@ public class ModelFactory {
             }
 
             @Override
-            public int getMinY() {
+            public int getMinBuildHeight() {
                 return 0;
+            }
+
+            @Override
+            public float getShade(Direction direction, boolean shaded) {
+                return 1.0f;
+            }
+
+            @Override
+            public LevelLightEngine getLightEngine() {
+                return null;
+            }
+
+            @Override
+            public int getBlockTint(BlockPos pos, ColorResolver colorResolver) {
+                return -1;
+            }
+
+            @Override
+            public int getBrightness(LightLayer lightType, BlockPos pos) {
+                return 15;
             }
         }, BlockPos.ZERO);
         if (isEmissive) {
