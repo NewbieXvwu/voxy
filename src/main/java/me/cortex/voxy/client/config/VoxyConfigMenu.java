@@ -131,6 +131,12 @@ public class VoxyConfigMenu implements ConfigEntryPoint {
                                     () -> CFG.useEnvironmentalFog,
                                     v -> { CFG.useEnvironmentalFog = v; })
                                         .setPostChangeFlags(RENDER_RELOAD),
+                                new BoolOption(
+                                    "voxy:render_fog",
+                                    Component.translatable("voxy.config.general.render_fog"),
+                                    () -> CFG.renderVoxyFog,
+                                    v -> { CFG.renderVoxyFog = v; })
+                                        .setPostChangeFlags(RENDER_RELOAD),
                                 new EnumOption<>("voxy:ssao_mode",
                                         SSAO.SSAOMode.class,
                                         Component.translatable("voxy.config.general.ssao_mode"),
