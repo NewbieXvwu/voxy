@@ -434,16 +434,20 @@ public class VoxyRenderSystem {
 
     private static Matrix4f computeProjectionMat(Matrix4fc base) {
 
-        var proj = new Matrix4f(base);
+        //this jank is to capture the extra crap they inject like viewbobbing
+        var rawMCProj = Minecraft.getInstance().gameRenderer.getGameRenderState().levelRenderState.cameraRenderState.projectionMatrix;
+        var extraProjection = rawMCProj.invert(new Matrix4f()).mul(base);
 
         float near = getRenderDistance()<=32.0f?8f:16f;
         near = VoxyClient.disableSodiumChunkRender()?0.1f:near;
 
         float far = 16*3000;
 
-        return proj
+        return extraProjection.mulLocal(
+                new Matrix4f(rawMCProj)
                 .m22((far + near) / (near - far))
-                .m32((far+far) * near / (near - far));
+                .m32((far+far) * near / (near - far))
+        );
     }
 
     private boolean frexStillHasWork() {
