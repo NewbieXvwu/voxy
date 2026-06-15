@@ -26,6 +26,10 @@ public class MixinGameRenderer {
     private void voxy$captureProjectionMatrix(CallbackInfo ci) {
         // Capture the vanilla projection matrix before it gets modified
         // This includes viewbobbing and other effects injected by Minecraft
+        var minecraft = net.minecraft.client.Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.level == null) {
+            return; // Not in a world yet, skip capturing
+        }
         var gameRenderer = (GameRenderer)(Object)this;
         var projMatrix = gameRenderer.getProjectionMatrix(1.0F); // 1.0F for current tick
         VoxyRenderSystem.setCapturedVanillaProjection(projMatrix);
