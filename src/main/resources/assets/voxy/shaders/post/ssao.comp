@@ -126,6 +126,14 @@ vec2 r2(int n, vec2 seed) {
 
 vec2 r2(int n) { return r2(n, vec2(0.5)); }
 
+
+vec2 r2(int n, vec2 seed) {
+    const vec2 alpha = 1.0 / vec2(phi2, phi2 * phi2);
+    return fract(seed + n * alpha);
+}
+
+vec2 r2(int n) { return r2(n, vec2(0.5)); }
+
 mat3 get_tbn_matrix(vec3 normal) {
     vec3 tangent = normal.y == 1.0
     ? vec3(1.0, 0.0, 0.0)
@@ -188,7 +196,7 @@ float computeAO(vec3 uvDepth, vec3 worldNorm)
         float depth = texture(depthTex, sample_uv).x;
 
 
-        if (depth == 1.0f || depth == uvDepth.z) {//TODO FIXME: check depth == uvDepth.z isnt causing any other strange issues (might be better to compare the sample uv instead)
+        if (depth == 1.0f) {//depth == uvDepth.z this happens alot when further out
             continue;
         }
         vec3 offset_view;// = rev3d(invProj, vec3(sample_uv, depth));
