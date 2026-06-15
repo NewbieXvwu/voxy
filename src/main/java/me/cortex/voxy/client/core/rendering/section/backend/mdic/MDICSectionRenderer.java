@@ -114,6 +114,7 @@ public class MDICSectionRenderer extends AbstractSectionRenderer<MDICViewport, B
                 //.defineIf("USE_NV_JANK", Capabilities.INSTANCE.isNvidia)//TODO: fix use capability to try compile the jank thing to see if it can be and use that
 
                 //.defineIf("USE_NV_BARRY", Capabilities.INSTANCE.nvBarryCoords)
+                //.defineIf("DARKENED_TINTING", Minecraft.getInstance().level.getDimensionEffects().isDarkened())//TODO: FIXME: this is really jank atm - disabled for 1.21.1 compatibility
 
                 .addSource(ShaderType.VERTEX, vertex);
 

@@ -32,6 +32,10 @@ public class ClientVoxyMixinPlugin implements IMixinConfigPlugin {
             mixins.add("sodium.MixinDefaultChunkRenderer");
         }
 
+        if (connectorInstalled) {
+            mixins.add("sodium.MixinShaderLoader");
+        }
+
         return mixins;
     }
 

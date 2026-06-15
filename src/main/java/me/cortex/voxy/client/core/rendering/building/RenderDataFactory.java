@@ -5,6 +5,7 @@ import me.cortex.voxy.client.core.model.ModelFactory;
 import me.cortex.voxy.client.core.model.ModelQueries;
 import me.cortex.voxy.client.core.util.ScanMesher2D;
 import me.cortex.voxy.common.Logger;
+import me.cortex.voxy.common.util.LumiseneUtil;
 import me.cortex.voxy.common.util.MemoryBuffer;
 import me.cortex.voxy.common.util.UnsafeUtil;
 import me.cortex.voxy.common.world.WorldEngine;
@@ -241,6 +242,9 @@ public class RenderDataFactory {
                         //TODO: cache the results of this, then link it to `block` do same optimization as SaveLoadSystem3
 
                         long modelMetadata = this.modelMan.getModelMetadataFromClientId(modelId);
+                        if (LumiseneUtil.isLumisene(this.world.getMapper(), block)) {
+                            block = Mapper.withLight(block, 0xFF);
+                        }
 
                         sectionData[i * 2] = packPartialQuadData(modelId, block, modelMetadata);
                         sectionData[i * 2 + 1] = modelMetadata;
@@ -353,7 +357,7 @@ public class RenderDataFactory {
     private static final long LM = (0xFFL<<55);
 
     private static boolean shouldMeshNonOpaqueBlockFace(int face, long quad, long meta, long neighborQuad, long neighborMeta) {
-        if (((quad^neighborQuad)&(0xFFFFL<<26))==0 && (DISABLE_CULL_SAME_OCCLUDES || ModelQueries.cullsSame(meta))) return false;//This is a hack, if the neigbor and this are the same, dont mesh the face// TODO: FIXME
+        if (((quad^neighborQuad)&(0xFFFFL<<26))==0 && (DISABLE_CULL_SAME_OCCLUDES || (ModelQueries.cullsSame(meta)||(ModelQueries.faceCanBeOccluded(meta, face)&&ModelQueries.faceOccludes(meta, face^1))))) return false;//This is a hack, if the neigbor and this are the same, dont mesh the face// TODO: FIXME
         if (!ModelQueries.faceExists(meta, face)) return false;//Dont mesh if no face
         if (ModelQueries.faceCanBeOccluded(meta, face)) //TODO: maybe enable this
           if (ModelQueries.faceOccludes(neighborMeta, face^1)) return false;
@@ -372,7 +376,7 @@ public class RenderDataFactory {
         }
     }
 
-    private static long applyQuadLight(long quad, long selfmeta) {
+    private static long getQuadLight(long quad, long selfmeta) {
         final long BLMSK = 0xFL<<(55+4);//block light mask
         long bl = quad&BLMSK;
         bl = Math.max(bl, ModelQueries.lightEmission(selfmeta)<<(55+4));

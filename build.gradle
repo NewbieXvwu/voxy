@@ -111,14 +111,14 @@ dependencies {
 
     modImplementation("maven.modrinth:lithium:mc1.21.1-0.15.0-fabric")
 
-    // modRuntimeOnlyMsk "drouarb:nvidium:0.4.1-beta9:1.21-1.21.1@jar"
+    modRuntimeOnlyMsk "drouarb:nvidium:0.4.1-beta9:1.21-1.21.1@jar"
     modCompileOnly "drouarb:nvidium:0.4.1-beta9:1.21-1.21.1@jar"
 
     modCompileOnly("maven.modrinth:modmenu:11.0.3")
     modRuntimeOnlyMsk("maven.modrinth:modmenu:11.0.3")
 
     modCompileOnly("maven.modrinth:iris:1.8.8+1.21.1-fabric")
-    // modRuntimeOnlyMsk("maven.modrinth:iris:1.8.8+1.21.1-fabric")
+    modRuntimeOnlyMsk("maven.modrinth:iris:1.8.8+1.21.1-fabric")
     // iris needs these for some reason
     modRuntimeOnlyMsk("io.github.douira:glsl-transformer:2.0.1")
     modRuntimeOnlyMsk("org.anarres:jcpp:1.4.14")

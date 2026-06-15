@@ -10,6 +10,7 @@ import me.cortex.voxy.client.core.gl.GlTexture;
 import me.cortex.voxy.client.core.model.bakery.SoftwareModelTextureBakery;
 import me.cortex.voxy.client.core.rendering.util.UploadStream;
 import me.cortex.voxy.common.Logger;
+import me.cortex.voxy.common.util.LumiseneUtil;
 import me.cortex.voxy.common.util.MemoryBuffer;
 import me.cortex.voxy.common.util.Pair;
 import me.cortex.voxy.common.world.other.Mapper;
@@ -24,7 +25,6 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.BlockAndTintGetter;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.biome.Biome;
@@ -164,12 +164,12 @@ public class ModelFactory {
 
         var blockState = this.mapper.getBlockStateFromBlockId(blockId);
         if (blockState.getBlock() instanceof StairBlock sb) {
-                /*
-                if (sb.baseState.hasProperty(BlockStateProperties.WATERLOGGED)) {
-                    blockState = sb.baseState.setValue(BlockStateProperties.WATERLOGGED, blockState.getValue(BlockStateProperties.WATERLOGGED));
-                } else {
-                    blockState = sb.baseState;
-                }*/
+            /*
+            if (sb.baseState.hasProperty(BlockStateProperties.WATERLOGGED)) {
+                blockState = sb.baseState.setValue(BlockStateProperties.WATERLOGGED, blockState.getValue(BlockStateProperties.WATERLOGGED));
+            } else {
+                blockState = sb.baseState;
+            }*/
             blockState = sb.baseState.getBlock().withPropertiesOf(blockState);
         }
 
@@ -177,7 +177,7 @@ public class ModelFactory {
 
         //Before we enqueue the baking of this blockstate, we must check if it has a fluid state associated with it
         // if it does, we must ensure that it is (effectivly) baked BEFORE we bake this blockstate
-        boolean isFluid = blockState.getBlock() instanceof LiquidBlock;
+        boolean isFluid = isFluidBlockState(blockState);
         if ((!isFluid) && (!blockState.getFluidState().isEmpty())) {
             //Insert into the fluid LUT
             var fluidState = blockState.getFluidState().createLegacyBlock();
@@ -400,7 +400,8 @@ public class ModelFactory {
 
         //TODO: add thing for `blockState.hasEmissiveLighting()` and `blockState.getLuminance()`
 
-        boolean isFluid = blockState.getBlock() instanceof LiquidBlock;
+        boolean isFluid = isFluidBlockState(blockState);
+        boolean isLumisene = LumiseneUtil.isLumisene(blockState);
         int modelId = -1;
 
 
@@ -418,7 +419,7 @@ public class ModelFactory {
             }
         }
 
-        var colourProvider = getColourProvider(blockState.getBlock());
+        var colourProvider = getColourProvider(blockState);
 
         boolean isBiomeColourDependent = false;
         if (colourProvider != null) {
@@ -520,7 +521,7 @@ public class ModelFactory {
         metadata |= layer == RenderType.translucent()?2:0;
         metadata |= needsDoubleSidedQuads?4:0;
         metadata |= ((!isFluid) && !blockState.getFluidState().isEmpty())?8:0;//Has a fluid state accosiacted with it and is not itself a fluid
-        metadata |= isFluid?16:0;//Is a fluid
+        metadata |= (isFluid && !isLumisene)?16:0;//Is a fluid
 
         metadata |= cullsSame?32:0;
 
@@ -536,6 +537,13 @@ public class ModelFactory {
             if (offset < -0.1) {//Face is empty, so ignore
                 metadata |= 0xFF;//Mark the face as non-existent
                 //Set to -1 as safepoint
+                MemoryUtil.memPutInt(faceUploadPtr, -1);
+
+                fullyOpaque = false;
+                continue;
+            }
+            if (face >= Direction.NORTH.get3DDataValue() && LumiseneUtil.isThinLumisene(blockState)) {
+                metadata |= 0xFF;//Mark the face as non-existent
                 MemoryUtil.memPutInt(faceUploadPtr, -1);
 
                 fullyOpaque = false;
@@ -695,7 +703,7 @@ public class ModelFactory {
     }
 
     private static int getBlockLightEmission(BlockState state) {
-        boolean isEmissive = state.emissiveRendering(new BlockGetter() {
+        boolean isEmissive = state.emissiveRendering(new BlockAndTintGetter() {
             @Override
             public @Nullable BlockEntity getBlockEntity(BlockPos pos) {
                 return null;
@@ -719,6 +727,26 @@ public class ModelFactory {
             @Override
             public int getMinBuildHeight() {
                 return 0;
+            }
+
+            @Override
+            public float getShade(Direction direction, boolean shaded) {
+                return 1.0f;
+            }
+
+            @Override
+            public LevelLightEngine getLightEngine() {
+                return null;
+            }
+
+            @Override
+            public int getBlockTint(BlockPos pos, ColorResolver colorResolver) {
+                return -1;
+            }
+
+            @Override
+            public int getBrightness(LightLayer lightType, BlockPos pos) {
+                return 15;
             }
         }, BlockPos.ZERO);
         if (isEmissive) {
@@ -785,7 +813,7 @@ public class ModelFactory {
         int i = 0;
         long modelUpPtr = result.modelBiomeIndexPairs.address;
         for (var entry : this.modelsRequiringBiomeColours) {
-            var colourProvider = getColourProvider(entry.right().getBlock());
+            var colourProvider = getColourProvider(entry.right());
             if (colourProvider == null) {
                 throw new IllegalStateException();
             }
@@ -804,10 +832,15 @@ public class ModelFactory {
         return result;
     }
 
-    private static BlockColor getColourProvider(Block block) {
+    private static BlockColor getColourProvider(BlockState blockState) {
+        if (LumiseneUtil.isLumisene(blockState)) {
+            return null;
+        }
+
+        Block block = blockState.getBlock();
         BlockState defaultState = block.defaultBlockState();
         var blockColors = Minecraft.getInstance().getBlockColors();
-        if (block instanceof LiquidBlock) {
+        if (isFluidBlockState(blockState) || isFluidBlockState(defaultState)) {
             return (state, world, pos, tintIndex) -> blockColors.getColor(state, world, pos, tintIndex);
         }
         int color;
@@ -820,6 +853,15 @@ public class ModelFactory {
             return (state, world, pos, tintIndex) -> blockColors.getColor(state, world, pos, tintIndex);
         }
         return null;
+    }
+
+    public static boolean isFluidBlockState(BlockState state) {
+        if (state.getBlock() instanceof LiquidBlock) {
+            return true;
+        }
+
+        FluidState fluidState = state.getFluidState();
+        return !fluidState.isEmpty() && fluidState.createLegacyBlock().getBlock() == state.getBlock();
     }
 
     //TODO: add a method to detect biome dependent colours (can do by detecting if getColor is ever called)
