@@ -366,7 +366,7 @@ public class RenderDataFactory {
 
     private static void meshNonOpaqueFace(int face, long quad, long meta, long neighborQuad, long neighborMeta, Mesher mesher) {
         if (shouldMeshNonOpaqueBlockFace(face, quad, meta, neighborQuad, neighborMeta)) {
-            mesher.putNext(applyQuadLight(
+            mesher.putNext(getQuadLight(
                     (long) (face&1) |
                     (quad&~LM) |
                     ((ModelQueries.faceUsesSelfLighting(meta, face)?quad:neighborQuad) & LM),
@@ -441,7 +441,7 @@ public class RenderDataFactory {
                         }
 
                         this.blockMesher.putNext(
-                            applyQuadLight(
+                            getQuadLight(
                                 ((long) facingForward) |//Facing
                                 (selfModel&~LM) |
                                 (nextModel&LM),//Apply lighting
@@ -517,7 +517,7 @@ public class RenderDataFactory {
 
 
 
-                        this.blockMesher.putNext(applyQuadLight(
+                        this.blockMesher.putNext(getQuadLight(
                                 ((side == 0) ? 0L : 1L) |
                                 (A&~LM) |
                                 ((neighborId & (0xFFL << 56)) >>> 1),
@@ -604,7 +604,7 @@ public class RenderDataFactory {
                         //    lighter = this.sectionData[bi];
                         //}
 
-                        this.blockMesher.putNext(applyQuadLight(
+                        this.blockMesher.putNext(getQuadLight(
                                 ((long) facingForward) |//Facing
                                 (A&~LM) |
                                 (lighter&LM),//Apply lighting
@@ -688,7 +688,7 @@ public class RenderDataFactory {
                             }
                         }
 
-                        this.blockMesher.putNext(applyQuadLight(
+                        this.blockMesher.putNext(getQuadLight(
                                 (side == 0 ? 0L : 1L) |
                                 (A&~LM) |
                                 ((neighborId&(0xFFL<<56))>>>1),
@@ -835,7 +835,7 @@ public class RenderDataFactory {
 
                         //TODO: LIGHTING
                         if (ModelQueries.faceExists(Am, (axis<<1)|1) && ((side==1&&!fail) || (side==0&&!failB))) {
-                            this.blockMesher.putNext(applyQuadLight(
+                            this.blockMesher.putNext(getQuadLight(
                                     (long) (false ? 0L : 1L) |
                                     A |
                                     0,//((ModelQueries.faceUsesSelfLighting(B, (axis<<1)|1)?A:) & (0xFFL << 55))//TODO:THIS
@@ -846,7 +846,7 @@ public class RenderDataFactory {
                         }
 
                         if (ModelQueries.faceExists(Am, (axis<<1)|0) && ((side==0&&!fail) || (side==1&&!failB))) {
-                            this.seondaryblockMesher.putNext(applyQuadLight(
+                            this.seondaryblockMesher.putNext(getQuadLight(
                                     (long) (true ? 0L : 1L) |
                                     A |
                                     0,//(((0xFFL) & 0xFF) << 55)//TODO:THIS
@@ -1003,7 +1003,7 @@ public class RenderDataFactory {
                         long nextModel = this.sectionData[iB];
 
                         //Example thing thats just wrong but as example
-                        mesher.putNext(applyQuadLight(
+                        mesher.putNext(getQuadLight(
                                 ((long) facingForward) |//Facing
                                 (selfModel&~LM) |
                                 (nextModel&LM),//TODO FIX THIS (self lighting)
@@ -1070,7 +1070,7 @@ public class RenderDataFactory {
                         ma.skip(skipA); skipA = 0;
                         long A = this.sectionData[(i<<5) * 2];
                         long Am = this.sectionData[(i<<5) * 2+1];
-                        ma.putNext(applyQuadLight(
+                        ma.putNext(getQuadLight(
                                 0L |
                                 (A&~LM) |
                                 ((neighborId&(0xFFL<<56))>>>1),
@@ -1096,7 +1096,7 @@ public class RenderDataFactory {
                         mb.skip(skipB); skipB = 0;
                         long A = this.sectionData[(i*32+31) * 2];
                         long Am = this.sectionData[(i*32+31) * 2+1];
-                        mb.putNext(applyQuadLight(
+                        mb.putNext(getQuadLight(
                                 1L |
                                 (A&~LM) |
                                 ((neighborId&(0xFFL<<56))>>>1),
@@ -1225,7 +1225,7 @@ public class RenderDataFactory {
                         //}
 
                         //Example thing thats just wrong but as example
-                        mesher.putNext(applyQuadLight(
+                        mesher.putNext(getQuadLight(
                                 ((long) facingForward) |//Facing
                                 (A&~LM) |
                                 (lighter&LM),//Lighting
@@ -1331,7 +1331,7 @@ public class RenderDataFactory {
                         //    lighter = this.sectionData[bi];
                         //}
 
-                        ma.putNext(applyQuadLight(
+                        ma.putNext(getQuadLight(
                                 0L |
                                 (A&~LM) |
                                 lightData,
@@ -1395,7 +1395,7 @@ public class RenderDataFactory {
                         //    lighter = this.sectionData[bi];
                         //}
 
-                        mb.putNext(applyQuadLight(
+                        mb.putNext(getQuadLight(
                                 1L |
                                 (A&~LM) |
                                 lightData,
@@ -1526,7 +1526,7 @@ public class RenderDataFactory {
 
         //TODO: Check (neighborAId!=0) && works oki
         if ((neighborAId==0 && ModelQueries.faceExists(meta, ((2<<1)|0)^side))||(neighborAId!=0&&shouldMeshNonOpaqueBlockFace(((2<<1)|0)^side, quad, meta, ((long)neighborAId)<<26, neighborAMeta))) {
-            ma.putNext(applyQuadLight(
+            ma.putNext(getQuadLight(
                     ((long)side)|
                     (quad&~LM) |
                     (ModelQueries.faceUsesSelfLighting(meta, ((2<<1)|0)^side)?quad:(((long)neighborLight)<<55)),
@@ -1538,7 +1538,7 @@ public class RenderDataFactory {
         }
 
         if (shouldMeshNonOpaqueBlockFace(((2<<1)|1)^side, quad, meta, neighborBQuad, neighborBMeta)) {
-            mb.putNext(applyQuadLight(
+            mb.putNext(getQuadLight(
                     ((long)(side^1))|
                     (quad&~LM) |
                     ((ModelQueries.faceUsesSelfLighting(meta, ((2<<1)|1)^side)?quad:neighborBQuad)&(0xFFL<<55)),
